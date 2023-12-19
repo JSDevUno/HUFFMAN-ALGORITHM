@@ -1,91 +1,60 @@
 #include <iostream>
 #include <fstream>
-
 using namespace std;
 
-struct HuffmanNode {
+struct NodeData {
     char data;
     int frequency;
-    HuffmanNode* left;
-    HuffmanNode* right;
-    HuffmanNode(char c, int freq) : data(c), frequency(freq), left(nullptr), right(nullptr) {}
+    NodeData* left;
+    NodeData* right;
+    NodeData(char c, int freq) : data(c), frequency(freq), left(nullptr), right(nullptr) {}
+};
+
+struct Node {
+    NodeData *node; // binary tree pointer
+    Node* next;
+    Node(NodeData* bn) : node(bn), next(nullptr) {}
 };
 
 class PriorityQueue {
 private:
-    HuffmanNode** nodes;
-    size_t capacity;
-    size_t size;
+    Node* head;
 
 public:
-    PriorityQueue(size_t initialCapacity = 100) : capacity(initialCapacity), size(0) {
-        nodes = new HuffmanNode*[capacity];
-    }
+    PriorityQueue() : head(nullptr) {}
 
-    ~PriorityQueue() {
-        delete[] nodes;
-    }
+    void enqueue(NodeData* node) {
+        Node* newNode = new Node(node);
 
-    void enqueue(HuffmanNode* node) {
-        if (size >= capacity) {
-            resize();
-        }
-        nodes[size++] = node;
-        int i = size - 1;
-        while (i > 0 && nodes[(i - 1) / 2]->frequency > nodes[i]->frequency) {
-            swap(nodes[i], nodes[(i - 1) / 2]);
-            i = (i - 1) / 2;
+        if (!head || newNode->node->frequency < head->node->frequency) {
+            newNode->next = head;
+            head = newNode;
+        } else {
+            Node* current = head;
+            while (current->next && newNode->node->frequency >= current->next->node->frequency) {
+                current = current->next;
+            }
+            newNode->next = current->next;
+            current->next = newNode;
         }
     }
 
-    HuffmanNode* dequeue() {
-        if (isEmpty()) return nullptr;
-
-        HuffmanNode* root = nodes[0];
-        nodes[0] = nodes[size - 1];
-        size--;
-
-        int i = 0;
-        while (true) {
-            int smallest = i;
-            int left = 2 * i + 1;
-            int right = 2 * i + 2;
-
-            if (left < size && nodes[left]->frequency < nodes[smallest]->frequency) {
-                smallest = left;
-            }
-
-            if (right < size && nodes[right]->frequency < nodes[smallest]->frequency) {
-                smallest = right;
-            }
-
-            if (smallest != i) {
-                swap(nodes[i], nodes[smallest]);
-                i = smallest;
-            } else {
-                break;
-            }
+    NodeData* dequeue() {
+        if (!head) {
+            cout << "Priority Queue is empty." << endl;
+            return nullptr;
         }
 
-        return root;
+        NodeData* data = head->node;
+        Node* temp = head;
+        head = head->next;
+        delete temp;
+
+        return data;
     }
 
     bool isEmpty() {
-        return size == 0;
-    }
-
-    void resize() {
-        capacity *= 2;
-        HuffmanNode** newNodes = new HuffmanNode*[capacity];
-        for (size_t i = 0; i < size; ++i) {
-            newNodes[i] = nodes[i];
-        }
-        delete[] nodes;
-        nodes = newNodes;
-    }
-
-    size_t getNodeSize() const {
-        return size;
+        return head == nullptr;
     }
 };
 
@@ -97,28 +66,35 @@ void countFrequency(const string& text, pair<char, int>* freqList) {
     }
 }
 
-HuffmanNode* buildHuffmanTree(pair<char, int>* freqList) {
-    PriorityQueue pq(256);
+NodeData* buildHuffmanTree(pair<char, int>* freqList) {
+    PriorityQueue pq;
     for (size_t i = 0; i < 256; ++i) {
         if (freqList[i].second > 0) {
-            pq.enqueue(new HuffmanNode(freqList[i].first, freqList[i].second));
+            pq.enqueue(new NodeData(freqList[i].first, freqList[i].second));
         }
     }
 
-    while (pq.getNodeSize() > 1) {
-        HuffmanNode* left = pq.dequeue();
-        HuffmanNode* right = pq.dequeue();
+    while (!pq.isEmpty()) {
+        NodeData* left = pq.dequeue();
 
-        HuffmanNode* newNode = new HuffmanNode('$', left->frequency + right->frequency);
+        // Handle the case when there is only one node left in the priority queue
+        if (pq.isEmpty()) {
+            return left;
+        }
+
+        NodeData* right = pq.dequeue();
+
+        NodeData* newNode = new NodeData('$', left->frequency + right->frequency);
         newNode->left = left;
         newNode->right = right;
         pq.enqueue(newNode);
     }
 
-    return pq.dequeue();
+    // The priority queue is empty
+    return nullptr;
 }
 
-void generateCodes(HuffmanNode* root, string code, string* huffmanCodes) {
+void generateCodes(NodeData* root, string code, string* huffmanCodes) {
     if (root == nullptr) return;
     if (root->data != '$') {
         huffmanCodes[static_cast<unsigned char>(root->data)] = code;
@@ -166,10 +142,10 @@ void compressFile(const string& inputFile, const string& outputFile, string* huf
         return;
     }
 
-    pair<char, int> freqList[256] = {}; 
+    pair<char, int> freqList[256] = {};
     countFrequency(text, freqList);
 
-    HuffmanNode* root = buildHuffmanTree(freqList);
+    NodeData* root = buildHuffmanTree(freqList);
 
     generateCodes(root, "", huffmanCodes);
 
@@ -189,7 +165,6 @@ void compressFile(const string& inputFile, const string& outputFile, string* huf
     file.close();
     cout << "File compressed successfully: " << outputFile << endl;
 }
-
 
 void decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string compressedText;
@@ -226,10 +201,10 @@ int main() {
     cin >> compressFileName;
 
     string compressedFileName = compressFileName.substr(0, compressFileName.find_last_of('.')) + "_compressed.txt";
-    string huffmanCodes[256] = {}; 
+    string huffmanCodes[256] = {};
 
     compressFile(compressFileName, compressedFileName, huffmanCodes);
-    
+
     if (!compressedFileName.empty()) {
         cout << "Search file to decompress (" << compressedFileName << "): ";
         cin >> decompressFileName;

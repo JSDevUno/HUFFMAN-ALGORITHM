@@ -37,6 +37,9 @@ public:
             newNode->next = current->next;
             current->next = newNode;
         }
+
+        // Print the frequency of the enqueued data
+        cout << "Enqueued: Data = " << newNode->node->data << ", Frequency = " << newNode->node->frequency << endl;
     }
 
     NodeData* dequeue() {

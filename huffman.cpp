@@ -1,75 +1,95 @@
 #include <iostream>
 #include <fstream>
+
 using namespace std;
 
-struct NodeData {
+struct HuffmanNode {
     char data;
     int frequency;
-    NodeData* left;
-    NodeData* right;
-    NodeData(char c, int freq) : data(c), frequency(freq), left(nullptr), right(nullptr) {}
-};
-
-struct Node {
-    NodeData *node; // binary tree pointer
-    Node* next;
-    Node(NodeData* bn) : node(bn), next(nullptr) {}
+    HuffmanNode* left;
+    HuffmanNode* right;
+    HuffmanNode(char c, int freq) : data(c), frequency(freq), left(nullptr), right(nullptr) {}
 };
 
 class PriorityQueue {
 private:
-    Node* head;
+    HuffmanNode** nodes;
+    size_t capacity;
+    size_t size;
 
 public:
-    PriorityQueue() : head(nullptr) {}
-
-    void enqueue(char data, int frequency) {
-        NodeData* node = new NodeData(data, frequency);
-        Node* newNode = new Node(node);
-
-        if (!head || newNode->node->frequency < head->node->frequency) {
-            newNode->next = head;
-            head = newNode;
-        } else {
-            Node* current = head;
-            while (current->next && newNode->node->frequency >= current->next->node->frequency) {
-                current = current->next;
-            }
-            newNode->next = current->next;
-            current->next = newNode;
-        }
-        cout << data << " with frequency " << frequency << " successfully enqueued.\n";
+    PriorityQueue(size_t initialCapacity = 100) : capacity(initialCapacity), size(0) {
+        nodes = new HuffmanNode*[capacity];
     }
 
-    char dequeue() {
-        if (!head) {
-            cout << "Priority Queue is empty." << endl;
-            return '\0';
+    ~PriorityQueue() {
+        delete[] nodes;
+    }
+
+    void enqueue(HuffmanNode* node) {
+        if (size >= capacity) {
+            resize();
+        }
+        nodes[size++] = node;
+        int i = size - 1;
+        while (i > 0 && nodes[(i - 1) / 2]->frequency > nodes[i]->frequency) {
+            swap(nodes[i], nodes[(i - 1) / 2]);
+            i = (i - 1) / 2;
+        }
+    }
+
+    HuffmanNode* dequeue() {
+        if (isEmpty()) return nullptr;
+
+        HuffmanNode* root = nodes[0];
+        nodes[0] = nodes[size - 1];
+        size--;
+
+        int i = 0;
+        while (true) {
+            int smallest = i;
+            int left = 2 * i + 1;
+            int right = 2 * i + 2;
+
+            if (left < size && nodes[left]->frequency < nodes[smallest]->frequency) {
+                smallest = left;
+            }
+
+            if (right < size && nodes[right]->frequency < nodes[smallest]->frequency) {
+                smallest = right;
+            }
+
+            if (smallest != i) {
+                swap(nodes[i], nodes[smallest]);
+                i = smallest;
+            } else {
+                break;
+            }
         }
 
-        char data = head->node->data;
-        Node* temp = head;
-        head = head->next;
-        delete temp;
-
-        return data;
+        return root;
     }
 
     bool isEmpty() {
-        return head == nullptr;
+        return size == 0;
     }
 
-    // Functions related to Huffman Coding
-    NodeData* buildHuffmanTree(pair<char, int>* freqList);
-    void countFrequency(const string& text, pair<char, int>* freqList);
-    void generateCodes(NodeData* root, string code, string* huffmanCodes);
-    void compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes);
-    void decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes);
-    bool writeToFile(const string& fileName, const string& content);
-    bool readFromFile(const string& fileName, string& content);
+    void resize() {
+        capacity *= 2;
+        HuffmanNode** newNodes = new HuffmanNode*[capacity];
+        for (size_t i = 0; i < size; ++i) {
+            newNodes[i] = nodes[i];
+        }
+        delete[] nodes;
+        nodes = newNodes;
+    }
+
+    size_t getNodeSize() const {
+        return size;
+    }
 };
 
-void PriorityQueue::countFrequency(const string& text, pair<char, int>* freqList) {
+void countFrequency(const string& text, pair<char, int>* freqList) {
     for (char c : text) {
         unsigned char index = static_cast<unsigned char>(c);
         freqList[index].first = c;
@@ -77,42 +97,37 @@ void PriorityQueue::countFrequency(const string& text, pair<char, int>* freqList
     }
 }
 
-NodeData* PriorityQueue::buildHuffmanTree(pair<char, int>* freqList) {
+HuffmanNode* buildHuffmanTree(pair<char, int>* freqList) {
+    PriorityQueue pq(256);
     for (size_t i = 0; i < 256; ++i) {
         if (freqList[i].second > 0) {
-            enqueue(freqList[i].first, freqList[i].second);
+            pq.enqueue(new HuffmanNode(freqList[i].first, freqList[i].second));
         }
     }
 
-    while (head && head->next) {
-        Node* left = head;
-        Node* right = head->next;
+    while (pq.getNodeSize() > 1) {
+        HuffmanNode* left = pq.dequeue();
+        HuffmanNode* right = pq.dequeue();
 
-        char data = '\0'; // Placeholder for internal nodes
-        int frequency = left->node->frequency + right->node->frequency;
-
-        NodeData* newNode = new NodeData(data, frequency);
-        newNode->left = left->node;
-        newNode->right = right->node;
-
-        head = head->next->next; // Advance two nodes
-
-        enqueue('\0', frequency); // Enqueue the new internal node
+        HuffmanNode* newNode = new HuffmanNode('$', left->frequency + right->frequency);
+        newNode->left = left;
+        newNode->right = right;
+        pq.enqueue(newNode);
     }
 
-    return head ? head->node : nullptr; // Return the root of the Huffman tree
+    return pq.dequeue();
 }
 
-void PriorityQueue::generateCodes(NodeData* root, string code, string* huffmanCodes) {
+void generateCodes(HuffmanNode* root, string code, string* huffmanCodes) {
     if (root == nullptr) return;
-    if (root->data != '\0') {
+    if (root->data != '$') {
         huffmanCodes[static_cast<unsigned char>(root->data)] = code;
     }
     generateCodes(root->left, code + "0", huffmanCodes);
     generateCodes(root->right, code + "1", huffmanCodes);
 }
 
-bool PriorityQueue::writeToFile(const string& fileName, const string& content) {
+bool writeToFile(const string& fileName, const string& content) {
     ofstream file(fileName, ios::binary);
     if (!file.is_open()) {
         cerr << "Unable to create the file: " << fileName << endl;
@@ -124,7 +139,7 @@ bool PriorityQueue::writeToFile(const string& fileName, const string& content) {
     return true;
 }
 
-bool PriorityQueue::readFromFile(const string& fileName, string& content) {
+bool readFromFile(const string& fileName, string& content) {
     ifstream file(fileName, ios::binary);
     if (!file.is_open()) {
         cerr << "Unable to open the file: " << fileName << endl;
@@ -139,7 +154,7 @@ bool PriorityQueue::readFromFile(const string& fileName, string& content) {
     return true;
 }
 
-void PriorityQueue::compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
+void compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string text;
     if (!readFromFile(inputFile, text)) {
         cerr << "Compression failed: Unable to read input file." << endl;
@@ -151,60 +166,43 @@ void PriorityQueue::compressFile(const string& inputFile, const string& outputFi
         return;
     }
 
-    pair<char, int> freqList[256] = {};
+    pair<char, int> freqList[256] = {}; 
     countFrequency(text, freqList);
 
-    NodeData* root = buildHuffmanTree(freqList);
+    HuffmanNode* root = buildHuffmanTree(freqList);
 
-    string encodedBinary;
-    string currentByte;
+    generateCodes(root, "", huffmanCodes);
+
+    ofstream file(outputFile, ios::binary);
+    if (!file.is_open()) {
+        cerr << "Compression failed: Unable to write output file." << endl;
+        return;
+    }
+
+    string compressedData;
     for (char c : text) {
-        string code = huffmanCodes[static_cast<unsigned char>(c)];
-        for (char bit : code) {
-            currentByte += bit;
-            if (currentByte.length() == 8) {
-                char ch = static_cast<char>(stoi(currentByte, nullptr, 2));
-                encodedBinary += ch;
-                currentByte.clear();
-            }
-        }
+        compressedData += huffmanCodes[static_cast<unsigned char>(c)];
     }
 
-    if (!currentByte.empty()) {
-        while (currentByte.length() < 8) {
-            currentByte += '0';
-        }
-        char ch = static_cast<char>(stoi(currentByte, nullptr, 2));
-        encodedBinary += ch;
-    }
+    file << compressedData;
 
-    if (writeToFile(outputFile, encodedBinary)) {
+    file.close();
     cout << "File compressed successfully: " << outputFile << endl;
-    } else {
-    cerr << "Compression failed: Unable to write output file." << endl;
-    }
-
 }
 
-void PriorityQueue::decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
+
+void decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string compressedText;
     if (!readFromFile(inputFile, compressedText)) {
         cerr << "Decompression failed: Unable to read input file." << endl;
         return;
     }
 
-
-    string binaryString;
-    for (char c : compressedText) {
-        for (int i = 7; i >= 0; --i) {
-            binaryString += ((c >> i) & 1) + '0';
-        }
-    }
-
     string code;
     string decompressedData;
-    for (char bit : binaryString) {
-        code += bit;
+
+    for (char c : compressedText) {
+        code += c;
         for (size_t i = 0; i < 256; ++i) {
             if (code == huffmanCodes[i]) {
                 decompressedData += static_cast<char>(i);
@@ -222,25 +220,23 @@ void PriorityQueue::decompressFile(const string& inputFile, const string& output
 }
 
 int main() {
-    PriorityQueue pq;
-
     string compressFileName, decompressFileName;
 
     cout << "Search file to compress: ";
     cin >> compressFileName;
 
     string compressedFileName = compressFileName.substr(0, compressFileName.find_last_of('.')) + "_compressed.txt";
-    string huffmanCodes[256] = {};
+    string huffmanCodes[256] = {}; 
 
-    pq.compressFile(compressFileName, compressedFileName, huffmanCodes);
-
+    compressFile(compressFileName, compressedFileName, huffmanCodes);
+    
     if (!compressedFileName.empty()) {
         cout << "Search file to decompress (" << compressedFileName << "): ";
         cin >> decompressFileName;
 
         if (!decompressFileName.empty()) {
             decompressFileName = decompressFileName.substr(0, decompressFileName.find_last_of('.')) + "_decompressed.txt";
-            pq.decompressFile(compressedFileName, decompressFileName, huffmanCodes);
+            decompressFile(compressedFileName, decompressFileName, huffmanCodes);
         }
     }
 

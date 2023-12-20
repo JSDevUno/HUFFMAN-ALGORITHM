@@ -1,1 +1,3 @@
-merry
+This is a sample text file.
+It contains some random text used for testing purposes.
+You can write anything you like in this file.

@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream>
 using namespace std;
-
+// NodeData and Node Structs
+// NodeData holds information about something, and Node connects to other Nodes.
 struct NodeData {
     char data;
     int frequency;
@@ -11,11 +12,12 @@ struct NodeData {
 };
 
 struct Node {
-    NodeData *node; // binary tree pointer
+    NodeData *node; 
     Node* next;
     Node(NodeData* bn) : node(bn), next(nullptr) {}
 };
-
+// PriorityQueue Class
+// This class organizes boxes in a line, each with a number, and keeps them sorted.
 class PriorityQueue {
 private:
     Node* head;
@@ -23,8 +25,7 @@ private:
 public:
     PriorityQueue() : head(nullptr) {}
 
-    void enqueue(char data, int frequency) {
-        NodeData* node = new NodeData(data, frequency);
+    void enqueue(NodeData* node) {
         Node* newNode = new Node(node);
 
         if (!head || newNode->node->frequency < head->node->frequency) {
@@ -38,16 +39,17 @@ public:
             newNode->next = current->next;
             current->next = newNode;
         }
-        cout << data << " with frequency " << frequency << " successfully enqueued.\n";
+
+        cout << "Enqueued: Data = " << newNode->node->data << ", Frequency = " << newNode->node->frequency << endl;
     }
 
-    char dequeue() {
+    NodeData* dequeue() {
         if (!head) {
             cout << "Priority Queue is empty." << endl;
-            return '\0';
+            return nullptr;
         }
 
-        char data = head->node->data;
+        NodeData* data = head->node;
         Node* temp = head;
         head = head->next;
         delete temp;
@@ -58,61 +60,56 @@ public:
     bool isEmpty() {
         return head == nullptr;
     }
-
-    // Functions related to Huffman Coding
-    NodeData* buildHuffmanTree(pair<char, int>* freqList);
-    void countFrequency(const string& text, pair<char, int>* freqList);
-    void generateCodes(NodeData* root, string code, string* huffmanCodes);
-    void compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes);
-    void decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes);
-    bool writeToFile(const string& fileName, const string& content);
-    bool readFromFile(const string& fileName, string& content);
 };
-
-void PriorityQueue::countFrequency(const string& text, pair<char, int>* freqList) {
+// countFrequency Function
+// This function counts how many times each letter appears in a story.
+void countFrequency(const string& text, pair<char, int>* freqList) {
     for (char c : text) {
         unsigned char index = static_cast<unsigned char>(c);
         freqList[index].first = c;
         freqList[index].second++;
     }
 }
-
-NodeData* PriorityQueue::buildHuffmanTree(pair<char, int>* freqList) {
+// buildHuffmanTree Function
+// This function builds a family tree for letters, figuring out which ones are related.
+NodeData* buildHuffmanTree(pair<char, int>* freqList) {
+    PriorityQueue pq;
     for (size_t i = 0; i < 256; ++i) {
         if (freqList[i].second > 0) {
-            enqueue(freqList[i].first, freqList[i].second);
+            pq.enqueue(new NodeData(freqList[i].first, freqList[i].second));
         }
     }
 
-    while (head && head->next) {
-        Node* left = head;
-        Node* right = head->next;
+    while (!pq.isEmpty()) {
+        NodeData* left = pq.dequeue();
 
-        char data = '\0'; // Placeholder for internal nodes
-        int frequency = left->node->frequency + right->node->frequency;
+        if (pq.isEmpty()) {
+            return left;
+        }
 
-        NodeData* newNode = new NodeData(data, frequency);
-        newNode->left = left->node;
-        newNode->right = right->node;
+        NodeData* right = pq.dequeue();
 
-        head = head->next->next; // Advance two nodes
-
-        enqueue('\0', frequency); // Enqueue the new internal node
+        NodeData* newNode = new NodeData('$', left->frequency + right->frequency);
+        newNode->left = left;
+        newNode->right = right;
+        pq.enqueue(newNode);
     }
 
-    return head ? head->node : nullptr; // Return the root of the Huffman tree
+    return nullptr;
 }
-
-void PriorityQueue::generateCodes(NodeData* root, string code, string* huffmanCodes) {
+// generateCodes Function
+// This function gives each family member (letter) a secret code.
+void generateCodes(NodeData* root, string code, string* huffmanCodes) {
     if (root == nullptr) return;
-    if (root->data != '\0') {
+    if (root->data != '$') {
         huffmanCodes[static_cast<unsigned char>(root->data)] = code;
     }
     generateCodes(root->left, code + "0", huffmanCodes);
     generateCodes(root->right, code + "1", huffmanCodes);
 }
-
-bool PriorityQueue::writeToFile(const string& fileName, const string& content) {
+// writeToFile Function
+// This function writes a secret message (compressed data) on paper and locks it in a box (file).
+bool writeToFile(const string& fileName, const string& content) {
     ofstream file(fileName, ios::binary);
     if (!file.is_open()) {
         cerr << "Unable to create the file: " << fileName << endl;
@@ -123,8 +120,9 @@ bool PriorityQueue::writeToFile(const string& fileName, const string& content) {
     file.close();
     return true;
 }
-
-bool PriorityQueue::readFromFile(const string& fileName, string& content) {
+// readFromFile Function
+// This function opens the locked box and reads the secret message from the paper inside.
+bool readFromFile(const string& fileName, string& content) {
     ifstream file(fileName, ios::binary);
     if (!file.is_open()) {
         cerr << "Unable to open the file: " << fileName << endl;
@@ -138,8 +136,9 @@ bool PriorityQueue::readFromFile(const string& fileName, string& content) {
     file.close();
     return true;
 }
-
-void PriorityQueue::compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
+// compressFile Function
+// This function squishes a big story into a smaller version using the secret codes.
+void compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string text;
     if (!readFromFile(inputFile, text)) {
         cerr << "Compression failed: Unable to read input file." << endl;
@@ -156,53 +155,38 @@ void PriorityQueue::compressFile(const string& inputFile, const string& outputFi
 
     NodeData* root = buildHuffmanTree(freqList);
 
-    string encodedBinary;
-    string currentByte;
-    for (char c : text) {
-        string code = huffmanCodes[static_cast<unsigned char>(c)];
-        for (char bit : code) {
-            currentByte += bit;
-            if (currentByte.length() == 8) {
-                char ch = static_cast<char>(stoi(currentByte, nullptr, 2));
-                encodedBinary += ch;
-                currentByte.clear();
-            }
-        }
-    }
+    generateCodes(root, "", huffmanCodes);
 
-    if (!currentByte.empty()) {
-        while (currentByte.length() < 8) {
-            currentByte += '0';
-        }
-        char ch = static_cast<char>(stoi(currentByte, nullptr, 2));
-        encodedBinary += ch;
-    }
-
-    if (writeToFile(outputFile, encodedBinary)) {
-        cout << "File compressed successfully: " << outputFile << endl;
-    } else {
+    ofstream file(outputFile, ios::binary);
+    if (!file.is_open()) {
         cerr << "Compression failed: Unable to write output file." << endl;
+        return;
     }
-}
 
-void PriorityQueue::decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
+    string compressedData;
+    for (char c : text) {
+        compressedData += huffmanCodes[static_cast<unsigned char>(c)];
+    }
+
+    file << compressedData;
+
+    file.close();
+    cout << "File compressed successfully: " << outputFile << endl;
+}
+// decompressFile Function
+// This function un-squishes the story, turning the compressed version back into the original using the secret codes.
+void decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string compressedText;
     if (!readFromFile(inputFile, compressedText)) {
         cerr << "Decompression failed: Unable to read input file." << endl;
         return;
     }
 
-    string binaryString;
-    for (char c : compressedText) {
-        for (int i = 7; i >= 0; --i) {
-            binaryString += ((c >> i) & 1) + '0';
-        }
-    }
-
     string code;
     string decompressedData;
-    for (char bit : binaryString) {
-        code += bit;
+
+    for (char c : compressedText) {
+        code += c;
         for (size_t i = 0; i < 256; ++i) {
             if (code == huffmanCodes[i]) {
                 decompressedData += static_cast<char>(i);
@@ -220,8 +204,6 @@ void PriorityQueue::decompressFile(const string& inputFile, const string& output
 }
 
 int main() {
-    PriorityQueue pq;
-
     string compressFileName, decompressFileName;
 
     cout << "Search file to compress: ";
@@ -230,7 +212,7 @@ int main() {
     string compressedFileName = compressFileName.substr(0, compressFileName.find_last_of('.')) + "_compressed.txt";
     string huffmanCodes[256] = {};
 
-    pq.compressFile(compressFileName, compressedFileName, huffmanCodes);
+    compressFile(compressFileName, compressedFileName, huffmanCodes);
 
     if (!compressedFileName.empty()) {
         cout << "Search file to decompress (" << compressedFileName << "): ";
@@ -238,7 +220,7 @@ int main() {
 
         if (!decompressFileName.empty()) {
             decompressFileName = decompressFileName.substr(0, decompressFileName.find_last_of('.')) + "_decompressed.txt";
-            pq.decompressFile(compressedFileName, decompressFileName, huffmanCodes);
+            decompressFile(compressedFileName, decompressFileName, huffmanCodes);
         }
     }
 

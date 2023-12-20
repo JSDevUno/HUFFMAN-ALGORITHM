@@ -62,7 +62,7 @@ public:
     }
 };
 // countFrequency Function
-// This function counts how many times each letter appears in a story.
+// This function counts how many times each letter appears in a text.
 void countFrequency(const string& text, pair<char, int>* freqList) {
     for (char c : text) {
         unsigned char index = static_cast<unsigned char>(c);
@@ -108,7 +108,7 @@ void generateCodes(NodeData* root, string code, string* huffmanCodes) {
     generateCodes(root->right, code + "1", huffmanCodes);
 }
 // writeToFile Function
-// This function writes a secret message (compressed data) on paper and locks it in a box (file).
+// This function writes a secret message (compressed data) on text (file).
 bool writeToFile(const string& fileName, const string& content) {
     ofstream file(fileName, ios::binary);
     if (!file.is_open()) {
@@ -121,7 +121,7 @@ bool writeToFile(const string& fileName, const string& content) {
     return true;
 }
 // readFromFile Function
-// This function opens the locked box and reads the secret message from the paper inside.
+// This function opens the txt file and reads the secret message from the paper inside.
 bool readFromFile(const string& fileName, string& content) {
     ifstream file(fileName, ios::binary);
     if (!file.is_open()) {
@@ -137,7 +137,7 @@ bool readFromFile(const string& fileName, string& content) {
     return true;
 }
 // compressFile Function
-// This function squishes a big story into a smaller version using the secret codes.
+// This function compress a text file into a smaller version using the secret custom codes.
 void compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string text;
     if (!readFromFile(inputFile, text)) {
@@ -174,7 +174,7 @@ void compressFile(const string& inputFile, const string& outputFile, string* huf
     cout << "File compressed successfully: " << outputFile << endl;
 }
 // decompressFile Function
-// This function un-squishes the story, turning the compressed version back into the original using the secret codes.
+// This function decompress the file, turning the compressed version back into the original using the secret custom codes.
 void decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string compressedText;
     if (!readFromFile(inputFile, compressedText)) {

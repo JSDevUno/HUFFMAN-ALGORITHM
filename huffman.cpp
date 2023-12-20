@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream>
 using namespace std;
-
+// NodeData and Node Structs
+// NodeData holds information about something, and Node connects to other Nodes.
 struct NodeData {
     char data;
     int frequency;
@@ -11,11 +12,12 @@ struct NodeData {
 };
 
 struct Node {
-    NodeData *node; // binary tree pointer
+    NodeData *node; 
     Node* next;
     Node(NodeData* bn) : node(bn), next(nullptr) {}
 };
-
+// PriorityQueue Class
+// This class organizes boxes in a line, each with a number, and keeps them sorted.
 class PriorityQueue {
 private:
     Node* head;
@@ -38,7 +40,6 @@ public:
             current->next = newNode;
         }
 
-        // Print the frequency of the enqueued data
         cout << "Enqueued: Data = " << newNode->node->data << ", Frequency = " << newNode->node->frequency << endl;
     }
 
@@ -60,7 +61,8 @@ public:
         return head == nullptr;
     }
 };
-
+// countFrequency Function
+// This function counts how many times each letter appears in a story.
 void countFrequency(const string& text, pair<char, int>* freqList) {
     for (char c : text) {
         unsigned char index = static_cast<unsigned char>(c);
@@ -68,7 +70,8 @@ void countFrequency(const string& text, pair<char, int>* freqList) {
         freqList[index].second++;
     }
 }
-
+// buildHuffmanTree Function
+// This function builds a family tree for letters, figuring out which ones are related.
 NodeData* buildHuffmanTree(pair<char, int>* freqList) {
     PriorityQueue pq;
     for (size_t i = 0; i < 256; ++i) {
@@ -80,7 +83,6 @@ NodeData* buildHuffmanTree(pair<char, int>* freqList) {
     while (!pq.isEmpty()) {
         NodeData* left = pq.dequeue();
 
-        // Handle the case when there is only one node left in the priority queue
         if (pq.isEmpty()) {
             return left;
         }
@@ -93,10 +95,10 @@ NodeData* buildHuffmanTree(pair<char, int>* freqList) {
         pq.enqueue(newNode);
     }
 
-    // The priority queue is empty
     return nullptr;
 }
-
+// generateCodes Function
+// This function gives each family member (letter) a secret code.
 void generateCodes(NodeData* root, string code, string* huffmanCodes) {
     if (root == nullptr) return;
     if (root->data != '$') {
@@ -105,7 +107,8 @@ void generateCodes(NodeData* root, string code, string* huffmanCodes) {
     generateCodes(root->left, code + "0", huffmanCodes);
     generateCodes(root->right, code + "1", huffmanCodes);
 }
-
+// writeToFile Function
+// This function writes a secret message (compressed data) on paper and locks it in a box (file).
 bool writeToFile(const string& fileName, const string& content) {
     ofstream file(fileName, ios::binary);
     if (!file.is_open()) {
@@ -117,7 +120,8 @@ bool writeToFile(const string& fileName, const string& content) {
     file.close();
     return true;
 }
-
+// readFromFile Function
+// This function opens the locked box and reads the secret message from the paper inside.
 bool readFromFile(const string& fileName, string& content) {
     ifstream file(fileName, ios::binary);
     if (!file.is_open()) {
@@ -132,7 +136,8 @@ bool readFromFile(const string& fileName, string& content) {
     file.close();
     return true;
 }
-
+// compressFile Function
+// This function squishes a big story into a smaller version using the secret codes.
 void compressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string text;
     if (!readFromFile(inputFile, text)) {
@@ -168,7 +173,8 @@ void compressFile(const string& inputFile, const string& outputFile, string* huf
     file.close();
     cout << "File compressed successfully: " << outputFile << endl;
 }
-
+// decompressFile Function
+// This function un-squishes the story, turning the compressed version back into the original using the secret codes.
 void decompressFile(const string& inputFile, const string& outputFile, string* huffmanCodes) {
     string compressedText;
     if (!readFromFile(inputFile, compressedText)) {

@@ -100,7 +100,7 @@ NodeData* buildHuffmanTree(pair<char, int>* freqList) {
 // generateCodes Function
 // This function gives each family member (letter) a secret code.
 
-/*Ginagamit ang dollar sign ($) bilang special characters para kumatawan sa mga internal na node sa Huffman tree.
+/*Ginagamit ang dollar sign ($) bilang special characters para irepresent yung mga internal na node sa Huffman tree.
  Yung dollar sign ay yung parang tanda lang na nagsasabing ito ay hindi regular na character kundi isang part ng tree na nagsisilbing tanda para sa mga internal parts ng Huffman tree. 
  tumutulong to sa tamang pagbuo ng tree kapag nangyayare ang decoding.*/
 void generateCodes(NodeData* root, string code, string* huffmanCodes) {

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <cstring>
 
 struct Node {
     Node* left, * right;
@@ -94,6 +93,40 @@ void decode(std::ifstream& fp_huffman, std::ofstream& fp_out) {
     putchar('\n');
     if (q[1] != n) std::cout << "Garbage input\n";
 }
+char* custom_strcpy(char* dest, const char* src) {
+    char* original_dest = dest;
+    while ((*dest++ = *src++) != '\0') {}
+    return original_dest;
+}
+
+char* custom_strstr(const char* haystack, const char* needle) {
+    while (*haystack != '\0') {
+        const char* h = haystack;
+        const char* n = needle;
+
+        while (*n != '\0' && *h == *n) {
+            h++;
+            n++;
+        }
+
+        if (*n == '\0') {
+            return const_cast<char*>(haystack);
+        }
+
+        haystack++;
+    }
+
+    return nullptr;
+}
+
+char* custom_strcat(char* dest, const char* src) {
+    char* original_dest = dest;
+    while (*dest != '\0') {
+        dest++;
+    }
+    while ((*dest++ = *src++) != '\0') {}
+    return original_dest;
+}
 
 int main(int argc, char* argv[]) {
     std::ifstream fp_table, fp_huffman;
@@ -103,8 +136,8 @@ int main(int argc, char* argv[]) {
     unsigned int freq[128] = { 0 };
 
     if (argc == 2) {
-        std::strcpy(file_name, argv[1]);
-        if (strstr(file_name, "huffman") == nullptr) {
+        custom_strcpy(file_name, argv[1]);
+        if (custom_strstr(file_name, "huffman") == nullptr) {
             std::cerr << "\nERROR: wrong file format!\n";
             return 0;
         }
@@ -114,9 +147,9 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     else {
-        std::cout << "Please enter the file to be compressed\t: ";
+        std::cout << "Please enter the file to be decompressed: ";
         std::cin >> file_name;
-        if (strstr(file_name, "huffman") == nullptr) {
+        if (custom_strstr(file_name, "huffman") == nullptr) {
             std::cerr << "\nERROR: wrong file format!\n";
             return 0;
         }
@@ -128,7 +161,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    strcat(file_name, ".table");
+    custom_strcat(file_name, ".table");
     fp_table.open(file_name);
     if (!fp_table.is_open()) {
         std::cerr << "\nERROR: Frequency table cannot be found\n";
@@ -137,15 +170,15 @@ int main(int argc, char* argv[]) {
 
     import_table(fp_table, freq);
 
-    *strstr(file_name, ".huffman") = '\0';
-    strcpy(temp, "mkdir ");
-    strcat(temp, file_name);
-    system(strcat(temp, ".decoded"));
+    *custom_strstr(file_name, ".huffman") = '\0';
+    custom_strcpy(temp, "mkdir ");
+    custom_strcat(temp, file_name);
+    system(custom_strcat(temp, ".decoded"));
 
-    strcpy(temp, "./");
-    strcat(temp, file_name);
-    strcat(temp, ".decoded/");
-    fp_out.open(strcat(temp, file_name));
+    custom_strcpy(temp, "./");
+    custom_strcat(temp, file_name);
+    custom_strcat(temp, ".decoded/");
+    fp_out.open(custom_strcat(temp, file_name));
     if (!fp_out.is_open()) {
         std::cerr << "ERROR: Creating decoded file failed\n";
         return 0;

@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     else {
-        cout << "Please enter the file to be decompressed: ";
+        cout << "SEARCH FILE TO DECOMPRESSED: ";
         cin >> file_name;
         if (custom_strstr(file_name, "huffman") == nullptr) {
             cerr << "\nERROR: wrong file format!\n";

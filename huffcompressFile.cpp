@@ -83,16 +83,17 @@ void import_file(ifstream& fp_in, unsigned int* freq) {
     build_code(q[1], s);
 }
 
-void strcpy(char* dest, const char* src) {
+void string_copy(char* dest, const char* src) {
     while ((*dest++ = *src++) != '\0');
 }
 
-void strcat(char* dest, const char* src) {
+void string_concat(char* dest, const char* src) {
     while (*dest != '\0') {
         dest++;
     }
     while ((*dest++ = *src++) != '\0');
 }
+
 
 size_t strlen(const char* str) {
     const char* s = str;
@@ -116,7 +117,7 @@ void encode(ifstream& fp_in, ofstream& fp_out, unsigned int* freq) {
     for (i = 0; i < lim; i++) {
         if (buf[j] == '\0') {
             fp_in.get(in);
-            strcpy(buf, code[static_cast<unsigned char>(in)].c_str());
+            string_copy(buf, code[static_cast<unsigned char>(in)].c_str());
             j = 0;
         }
 
@@ -139,12 +140,20 @@ void encode(ifstream& fp_in, ofstream& fp_out, unsigned int* freq) {
 }
 
 void print_code(unsigned int* freq) {
-    cout << "\n---------CODE TABLE---------\n----------------------------\n";
-    cout << "---------FREQUENCY---------\n----------------------------\n";
-    for (int i = 0; i < 128; i++) {
-        if (isprint(static_cast<char>(i)) && !code[i].empty() && i != ' ')
+    cout << "\n============================\n=========DATA TABLE=========\n==========FREQUENCY=========\n";
+    cout << "===========BINARY===========\n============================\n";
+
+    cout << "Enqueued Frequencies:\n";
+    for (int i = 0; i < 128; ++i) {
+        if (freq[i] > 0) {
+            cout << static_cast<char>(i) << ": " << freq[i] << endl;
+        }
+    }
+    cout << "\nHuffman Codes:\n";
+    for (int i = 0; i < 128; ++i) {
+        if (isprint(static_cast<char>(i)) && !code[i].empty() && i != ' ') {
             cout << left << " " << static_cast<char>(i) << "    " << freq[i] << "                " << code[i] << '\n';
-        else if (!code[i].empty()) {
+        } else if (!code[i].empty()) {
             switch (i) {
                 case '\n':
                     cout << "\\n    ";
@@ -168,6 +177,7 @@ void print_code(unsigned int* freq) {
     cout << "----------------------------\n";
 }
 
+
 int main(int argc, char* argv[]) {
     ifstream fp_in;
     ofstream fp_out;
@@ -176,12 +186,12 @@ int main(int argc, char* argv[]) {
     unsigned int freq[128] = {0};
 
     if (argc == 2) {
-        strcpy(file_name, argv[1]);
+        string_copy(file_name, argv[1]);
     } else if (argc > 2) {
         cerr << "Too many arguments supplied.\n";
         return 0;
     } else {
-        cout << "Please enter the file to be compressed\t: ";
+        cout << "SEARCH FILE TO COMPRESSED: ";
         cin >> file_name;
     }
 
@@ -199,14 +209,14 @@ int main(int argc, char* argv[]) {
     import_file(fp_in, freq);
     print_code(freq);
 
-    strcat(file_name, ".huffman");
+    string_concat(file_name, ".huffman");
     fp_out.open(file_name);
     encode(fp_in, fp_out, freq);
 
     fp_in.close();
     fp_out.close();
 
-    strcat(file_name, ".table");
+    string_concat(file_name, ".table");
     fp_out.open(file_name);
     for (int i = 0; i < 128; i++) {
         fp_out.put(static_cast<char>(freq[i]));
@@ -216,12 +226,11 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 128; i++) input_data += freq[i];
 
     fp_out.close();
-    cout << "\nInput bytes:          " << input_data << '\n';
+    cout << "\nINPUT BYTES: " << input_data << '\n';
 
     int output_data = (output_data % 8) ? (output_data / 8) + 1 : (output_data / 8);
-    cout << "Output bytes:         " << output_data << '\n';
 
-    cout << "\nCompression ratio:    " << fixed << ((static_cast<double>(input_data - output_data) / input_data) * 100) << "%\n\n\n";
+    cout << "\nCOMPRESSION RATE: " << fixed << ((static_cast<double>(input_data - output_data) / input_data) * 100) << "%\n\n\n";
 
     string allBinaryCodes;
     for (int i = 0; i < 128; i++) {

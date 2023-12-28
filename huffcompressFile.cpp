@@ -142,41 +142,42 @@ void encode(ifstream& fp_in, ofstream& fp_out, unsigned int* freq) {
 void print_code(unsigned int* freq) {
     cout << "\n============================\n=========DATA TABLE=========\n==========FREQUENCY=========\n";
     cout << "===========BINARY===========\n============================\n";
-
+    
+    // Display enqueued frequencies
     cout << "Enqueued Frequencies:\n";
     for (int i = 0; i < 128; ++i) {
         if (freq[i] > 0) {
             cout << static_cast<char>(i) << ": " << freq[i] << endl;
         }
     }
+    
     cout << "\nHuffman Codes:\n";
     for (int i = 0; i < 128; ++i) {
         if (isprint(static_cast<char>(i)) && !code[i].empty() && i != ' ') {
-            cout << left << " " << static_cast<char>(i) << "    " << freq[i] << "                " << code[i] << '\n';
+            cout << left << " " << static_cast<char>(i) << "                " << code[i] << '\n';
         } else if (!code[i].empty()) {
             switch (i) {
                 case '\n':
-                    cout << "\\n    ";
+                    cout << "\\n                ";
                     break;
                 case ' ':
-                    cout << "\' \'   ";
+                    cout << "\' \'               ";
                     break;
                 case '\t':
-                    cout << "\\t    ";
+                    cout << "\\t                ";
                     break;
                 default:
                     cout << hex << uppercase;
                     if (i < 16)
                         cout << "0";
-                    cout << i << dec << "   ";
+                    cout << i << dec << "               ";
                     break;
             }
-            cout << "    " << freq[i] << "                " << code[i] << '\n';
+            cout << code[i] << '\n';
         }
     }
     cout << "----------------------------\n";
 }
-
 
 int main(int argc, char* argv[]) {
     ifstream fp_in;

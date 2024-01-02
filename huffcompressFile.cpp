@@ -179,6 +179,17 @@ void print_code(unsigned int* freq) {
     cout << "----------------------------\n";
 }
 
+void create_binary_file(const string& file_name, const string& binary_data) {
+    ofstream binary_out(file_name + "_encoded_binary.txt");
+    if (binary_out.is_open()) {
+        binary_out << binary_data;
+        binary_out.close();
+        cout << "\nEncoded binary data has been written to '" << file_name << "_encoded_binary.txt'\n";
+    } else {
+        cerr << "Unable to create encoded binary file.\n";
+    }
+}
+
 int main(int argc, char* argv[]) {
     ifstream fp_in;
     ofstream fp_out;
@@ -241,6 +252,6 @@ int main(int argc, char* argv[]) {
     }
 
     cout << "ENCODED: " << allBinaryCodes << '\n';
-
+    create_binary_file(file_name, allBinaryCodes);
     return 0;
 }
